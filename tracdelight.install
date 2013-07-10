@@ -1,0 +1,110 @@
+<?php
+
+/**
+ * Implements hook_schema().
+ */
+function tracdelight_schema() {
+  $schema = array();
+  $schema['tracdelight_product'] = array(
+    'fields'        => array(
+      'ein'           => array(
+        'description'   => 'Product EIN',
+        'type' => 'varchar',
+        'length' => 16,
+        'not null'      => TRUE,
+      ),
+      'detail_page_url' => array(
+        'description' => 'Detail Page Url.',
+        'type' => 'varchar',
+        'length' => 512,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'title' => array(
+        'description' => 'Title of a product.',
+        'type' => 'varchar',
+        'length' => 256,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'manufacturer' => array(
+        'description' => 'Manufacturer of a product.',
+        'type' => 'varchar',
+        'length' => 256,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'brand' => array(
+        'description' => 'Brand of a product.',
+        'type' => 'varchar',
+        'length' => 256,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'description' => array(
+        'description' => 'Description of a product.',
+        'type' => 'text',
+        'not null' => TRUE,
+      ),
+      'amount' => array(
+        'description' => 'Amount of a product.',
+        'type' => 'numeric',
+        'precision' => 7,
+        'scale' => 2,
+        'not null' => TRUE,
+      ),
+      'price_old' => array(
+        'description' => 'Old price of a product.',
+        'type' => 'numeric',
+        'precision' => 7,
+        'scale' => 2,
+        'not null' => TRUE,
+      ),
+      'base_price' => array(
+        'description' => 'Base price of a product.',
+        'type' => 'numeric',
+        'precision' => 7,
+        'scale' => 2,
+      ),
+      'currency_code' => array(
+        'description' => 'Currency code of a product.',
+        'type' => 'varchar',
+        'length' => 8,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'formatted_price' => array(
+        'description' => 'Formatted price of a product.',
+        'type' => 'varchar',
+        'length' => 64,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'formatted_price_old' => array(
+        'description' => 'Old formatted price of a product.',
+        'type' => 'varchar',
+        'length' => 64,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'image_base' => array(
+        'description' => 'Base image path of a product.',
+        'type' => 'varchar',
+        'length' => 256,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'active' => array(
+        'description' => 'Product is available in shop',
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 1,
+      ),
+    ),
+    'primary key'     => array('ein'),
+  );
+
+  return $schema;
+}
+
+

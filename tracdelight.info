@@ -1,1 +1,5 @@
 name = tracdelight
+core = 7.x
+
+files[] = tracdelight.admin.inc
+files[] = includes/tracdelight_product.inc

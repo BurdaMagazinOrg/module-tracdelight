@@ -1,0 +1,133 @@
+<?php
+
+/**
+ * Implements hook_entity_info().
+ */
+function tracdelight_entity_info() {
+  $return = array(
+    'tracdelight_product' => array(
+      'label' => t('tracdelight product'),
+      'controller class' => 'EntityAPIController',
+      'base table' => 'tracdelight_product',
+      'fieldable' => FALSE,
+      'entity class' => 'TracdelightProduct',
+      'entity keys' => array(
+        'id' => 'ein',
+      ),
+      'bundles' => array(),
+      'admin ui' => array(
+        'path' => 'admin/content/tracdelight-products',
+        'file' => 'tracdelight.admin.inc',
+        'controller class' => 'TracdelightProductUIController',
+      ),
+      'module' => 'tracdelight',
+      'view modes' => array(
+        'full' => array(
+          'label' => t('Default'),
+          'custom settings' => FALSE,
+        ),
+      ),
+      'access callback' => 'tracdelight_product_access',
+
+    ),
+  );
+  return $return;
+}
+
+/**
+ * Implements hook_menu().
+ */
+function tracdelight_menu() {
+
+  $items = entity_ui_controller('tracdelight_product')->hook_menu();
+  foreach ($items as &$item) {
+    $item['file'] = (isset($item['file'])) ? 'includes/tracdelight_product.inc' : NULL;
+  }
+  return $items;
+}
+
+/**
+ * Access callback for Product.
+ */
+function tracdelight_product_access($op, $tracdelight_product, $account = NULL, $entity_type = NULL) {
+  global $user;
+  if (!isset($account)) {
+    $account = $user;
+  }
+  switch ($op) {
+    case 'create':
+      return user_access('administer tracdelight_product entities', $account)
+        || user_access('create tracdelight_product entities', $account);
+    case 'view':
+      return user_access('administer tracdelight_product entities', $account)
+        || user_access('view tracdelight_product entities', $account);
+    case 'edit':
+      return user_access('administer tracdelight_product entities')
+        || user_access('edit any tracdelight_product entities')
+        || (user_access('edit own tracdelight_product entities') && ($tracdelight_product->uid == $account->uid));
+  }
+}
+
+/**
+ * Implements hook_permission().
+ */
+function tracdelight_product_permission() {
+  $permissions = array(
+    'create tracdelight_product entities' => array(
+      'title' => t('Create products'),
+      'description' => t('Allows users to create products.'),
+      'restrict access' => TRUE,
+    ),
+    'view tracdelight_product entities' => array(
+      'title' => t('View products'),
+      'description' => t('Allows users to view products.'),
+      'restrict access' => TRUE,
+    ),
+    'edit any tracdelight_product entities' => array(
+      'title' => t('Edit any products'),
+      'description' => t('Allows users to edit any products.'),
+      'restrict access' => TRUE,
+    ),
+    'edit own tracdelight_product entities' => array(
+      'title' => t('Edit own products'),
+      'description' => t('Allows users to edit own products.'),
+      'restrict access' => TRUE,
+    ),
+  );
+  return $permissions;
+}
+
+/**
+ * Load a task.
+ */
+function tracdelight_product_load($tkid, $reset = FALSE) {
+  $tasks = tracdelight_product_load_multiple(array($tkid), array(), $reset);
+  return reset($tasks);
+}
+/**
+ * Load multiple tasks based on certain conditions.
+ */
+function tracdelight_product_load_multiple($tkids = array(), $conditions = array(), $reset = FALSE) {
+  return entity_load('tracdelight_product', $tkids, $conditions, $reset);
+}
+
+/**
+ * Save task.
+ */
+function tracdelight_product_save($task) {
+  entity_save('tracdelight_product', $task);
+}
+
+/**
+ * Delete single task.
+ */
+function tracdelight_product_delete($task) {
+  entity_delete('tracdelight_product', entity_id('tracdelight_product' ,$task));
+}
+
+/**
+ * Delete multiple tasks.
+ */
+function tracdelight_product_delete_multiple($task_ids) {
+  entity_delete_multiple('tracdelight_product', $task_ids);
+}
