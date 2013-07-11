@@ -4,9 +4,35 @@ class TracdelightProductUIController extends EntityDefaultUIController {
 
 }
 
+function tracdelight_product_add() {
+  $tracdelight_product = (object) array(
+    'ein' => '',
+    'detail_page_url' => '',
+    'type' => 'tracdelight_product',
+  );
+
+  return drupal_get_form('tracdelight_product_form', $tracdelight_product);
+}
+
+
+
+
 /**
- * Task Form.
+ * Provides a list of existing entities and the ability to add more. Tabs
+ * provide field and display management.
  */
+function tracdelight_product_admin_page() {
+  $content = array();
+  $content[] = array(
+    '#type' => 'item',
+    '#markup' => t('Administration page for tracdelight products.')
+  );
+
+  return $content;
+}
+
+
+
 /*
  *
 
