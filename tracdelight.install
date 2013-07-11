@@ -19,7 +19,7 @@ function tracdelight_schema() {
         'length' => 512,
         'not null' => TRUE,
         'default' => '',
-      ),
+      ),/*
       'title' => array(
         'description' => 'Title of a product.',
         'type' => 'varchar',
@@ -99,7 +99,7 @@ function tracdelight_schema() {
         'type' => 'int',
         'not null' => TRUE,
         'default' => 1,
-      ),
+      ),*/
     ),
     'primary key'     => array('ein'),
   );

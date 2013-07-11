@@ -2,77 +2,150 @@
 
 /**
  * Implements hook_entity_info().
+ *
+ * This is the fundamental description of the entity.
+ *
+ * It provides a single entity with a single bundle and without revision
+ * support.
  */
 function tracdelight_entity_info() {
-  $return = array(
-    'tracdelight_product' => array(
-      'label' => t('tracdelight product'),
-      'controller class' => 'EntityAPIController',
-      'base table' => 'tracdelight_product',
-      'fieldable' => FALSE,
-      'entity class' => 'TracdelightProduct',
-      'entity keys' => array(
-        'id' => 'ein',
-      ),
-      'bundles' => array(),
-      'admin ui' => array(
-        'path' => 'admin/content/tracdelight-products',
-        'file' => 'tracdelight.admin.inc',
-        'controller class' => 'TracdelightProductUIController',
-      ),
-      'module' => 'tracdelight',
-      'view modes' => array(
-        'full' => array(
-          'label' => t('Default'),
-          'custom settings' => FALSE,
-        ),
-      ),
-      'access callback' => 'tracdelight_product_access',
+  $info['tracdelight_product'] = array(
+    // A human readable label to identify our entity.
+    'label' => t('tracdelight product'),
 
+    // The controller for our Entity, extending the Drupal core controller.
+    'controller class' => 'TracdelightProductController',
+
+    // The table for this entity defined in hook_schema()
+    'base table' => 'tracdelight_product',
+
+    // Returns the uri elements of an entity
+    'uri callback' => 'tracdelight_product_uri',
+
+    'label callback' => 'entity_class_label',
+
+    // IF fieldable == FALSE, we can't attach fields.
+    'fieldable' => TRUE,
+
+    'bundles' => array(
+      'tracdelight_product' => array(
+        'label' => 'tracdelight_product',
+        'admin' => array(
+          'path' => 'admin/structure/tracdelight_product/manage',
+          'access arguments' => array('administer tracdelight_product entities'),
+        ),
+      )
+    ),
+
+    // entity_keys tells the controller what database fields are used for key
+    // functions. It is not required if we don't have bundles or revisions.
+    // Here we do not support a revision, so that entity key is omitted.
+    'entity keys' => array(
+      'id' => 'ein' , // The 'id' (basic_id here) is the unique id.
+    ),
+    'entity class' => 'TracdelightProduct',
+
+    // Bundles are alternative groups of fields or configuration
+    // associated with a base entity type.
+    'admin ui' => array(
+      'path' => 'admin/content/tracdelight_product',
+    ),
+    'access callback' => 'tracdelight_product_access',
+    'module' => 'tracdelight',
+
+    // View modes allow entities to be displayed differently based on context.
+    // As a demonstration we'll support "Tweaky", but we could have and support
+    // multiple display modes.
+    'view modes' => array(
+      'teaser' => array(
+        'label' => t('Teaser'),
+        'custom settings' =>  TRUE,
+      ),
     ),
   );
-  return $return;
-}
 
-/**
- * Implements hook_menu().
- */
-function tracdelight_menu() {
-
-  $items = entity_ui_controller('tracdelight_product')->hook_menu();
-  foreach ($items as &$item) {
-    $item['file'] = (isset($item['file'])) ? 'includes/tracdelight_product.inc' : NULL;
-  }
-  return $items;
+  return $info;
 }
 
 /**
  * Access callback for Product.
  */
 function tracdelight_product_access($op, $tracdelight_product, $account = NULL, $entity_type = NULL) {
+
   global $user;
   if (!isset($account)) {
     $account = $user;
   }
   switch ($op) {
     case 'create':
-      return user_access('administer tracdelight_product entities', $account)
-        || user_access('create tracdelight_product entities', $account);
+      return user_access('create tracdelight_product entities', $account);
     case 'view':
-      return user_access('administer tracdelight_product entities', $account)
-        || user_access('view tracdelight_product entities', $account);
+      return user_access('view tracdelight_product entities', $account);
     case 'edit':
-      return user_access('administer tracdelight_product entities')
-        || user_access('edit any tracdelight_product entities')
-        || (user_access('edit own tracdelight_product entities') && ($tracdelight_product->uid == $account->uid));
+    case 'update':
+      return user_access('edit any tracdelight_product entities')
+      || (user_access('edit own tracdelight_product entities') && ($tracdelight_product->uid == $account->uid));
+    case 'delete':
+      return user_access('delete any tracdelight_product entities')
+      || (user_access('delete own tracdelight_product entities') && ($tracdelight_product->uid == $account->uid));
   }
 }
 
-/**
- * Implements hook_permission().
- */
-function tracdelight_product_permission() {
-  $permissions = array(
+
+
+function tracdelight_product_uri($tracdelight_product){
+  return array(
+    'path' => 'tracdelight_product/' . $tracdelight_product->ein,
+  );
+}
+
+function tracdelight_product_label($tracdelight_product){
+  return array(
+    'label' => $tracdelight_product->ein,
+  );
+}
+
+function tracdelight_product_load($ein = NULL, $reset = FALSE){
+  $eins = (isset ($ein) ? array($ein) : array());
+  $tracdelight_product = tracdelight_product_load_multiple($eins, $reset);
+  return $tracdelight_product ? reset ($tracdelight_product) : FALSE;
+}
+
+function tracdelight_product_load_multiple($eins = array(), $conditions = array(), $reset = FALSE){
+  return entity_load('tracdelight_product', $eins, $conditions, $reset);
+}
+
+
+function tracdelight_menu(){
+
+  $items = entity_ui_controller('tracdelight_product')->hook_menu();
+  foreach ($items as &$item) {
+    $item['file'] = (isset($item['file'])) ? 'includes/tracdelight_product.inc' : NULL;
+  }
+
+  // This provides a place for Field API to hang its own
+  // interface and has to be the same as what was defined
+  // in basic_entity_info() above.
+  $items['admin/structure/tracdelight_product/manage'] = array(
+    'title' => 'Administer tracdelight_product entity type',
+    'page callback' => 'tracdelight_product_admin_page',
+    'access arguments' => array('administer tracdelight_product entities'),
+  );
+
+  $items['tracdelight_product/%tracdelight_product'] = array(
+    'title callback' => 'postit_page_title',
+    'title arguments' => array(1),
+    'page callback' => 'tracdelight_product_page_view',
+    'page arguments' => array(1),
+    'access arguments' => array('view tracdelight_product entities'),
+    'type' => MENU_CALLBACK,
+  );
+
+  return $items;
+}
+
+function tracdelight_permission(){
+  return array(
     'create tracdelight_product entities' => array(
       'title' => t('Create products'),
       'description' => t('Allows users to create products.'),
@@ -93,41 +166,127 @@ function tracdelight_product_permission() {
       'description' => t('Allows users to edit own products.'),
       'restrict access' => TRUE,
     ),
+    'delete any tracdelight_product entities' => array(
+      'title' => t('Delete any products'),
+      'description' => t('Allows users to delete any products.'),
+      'restrict access' => TRUE,
+    ),
+    'delete own tracdelight_product entities' => array(
+      'title' => t('Delete own products'),
+      'description' => t('Allows users to delete own products.'),
+      'restrict access' => TRUE,
+    ),
   );
-  return $permissions;
+}
+
+function tracdelight_product_page_view($tracdelight_product, $view_mode = 'full'){
+  $tracdelight_product->content = array();
+
+  // Build fields content.
+  field_attach_prepare_view('tracdelight_product', array($tracdelight_product->ein => $tracdelight_product), $view_mode);
+  entity_prepare_view('tracdelight_product', array($tracdelight_product->ein => $tracdelight_product));
+  $tracdelight_product->content += field_attach_view('tracdelight_product', $tracdelight_product, $view_mode);
+
+  return $tracdelight_product->content;
+}
+
+function tracdelight_product_add() {
+  $tracdelight_product = (object) array (
+    'ein' => '',
+    'detail_page_url' => '',
+    'type' => 'tracdelight_product',
+  );
+
+  return drupal_get_form('tracdelight_product_form', $tracdelight_product);
+}
+
+function tracdelight_product_add_form_submit($form, &$form_state) {
+
+  $form_state['values']['is_new'] = isset($form_state['tracdelight_product']->is_new) ? $form_state['tracdelight_product']->is_new : FALSE;
+
+  $tracdelight_product_submission = (object) $form_state['values'];
+  field_attach_submit('tracdelight_product', $tracdelight_product_submission, $form, $form_state);
+  $tracdelight_product = tracdelight_product_save($tracdelight_product_submission);
+
+  dpm($tracdelight_product);
+
+  $form_state['redirect'] = "tracdelight_product/$tracdelight_product->ein";
+}
+
+function tracdelight_product_save(&$tracdelight_product) {
+  return entity_get_controller('tracdelight_product')->save($tracdelight_product);
+}
+
+function tracdelight_product_form($form, &$form_state, $tracdelight_product) {
+
+  $form_state['tracdelight_product'] = $tracdelight_product;
+
+  $form['ein'] = array(
+    '#type' => 'textfield',
+    '#required' => TRUE,
+    '#title' => t('EIN'),
+    '#default_value' => isset($tracdelight_product->ein) ? $tracdelight_product->ein : NULL,
+    '#disabled' => !(isset($tracdelight_product->is_new) && $tracdelight_product->is_new)
+
+  );
+
+  $form['detail_page_url'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Page URL'),
+    '#default_value' => isset($tracdelight_product->detail_page_url) ? $tracdelight_product->detail_page_url : NULL,
+
+    '#required' => TRUE,
+  );
+
+  $form['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Save'),
+    '#submit' => array('tracdelight_product_add_form_submit'),
+    '#weight' => 100,
+  );
+
+  $form['delete'] = array(
+    '#type' => 'submit',
+    '#value' => t('Delete'),
+    '#submit' => array('tracdelight_product_delete'),
+    '#weight' => 200,
+  );
+
+  field_attach_form('tracdelight_product', $tracdelight_product, $form, $form_state);
+
+  return $form;
 }
 
 /**
- * Load a task.
+ * Provides a list of existing entities and the ability to add more. Tabs
+ * provide field and display management.
  */
-function tracdelight_product_load($tkid, $reset = FALSE) {
-  $tasks = tracdelight_product_load_multiple(array($tkid), array(), $reset);
-  return reset($tasks);
-}
-/**
- * Load multiple tasks based on certain conditions.
- */
-function tracdelight_product_load_multiple($tkids = array(), $conditions = array(), $reset = FALSE) {
-  return entity_load('tracdelight_product', $tkids, $conditions, $reset);
+function tracdelight_product_admin_page() {
+  $content = array();
+  $content[] = array(
+    '#type' => 'item',
+    '#markup' => t('Administration page for tracdelight products.')
+  );
+
+  return $content;
 }
 
 /**
- * Save task.
+ * Implements hook_field_extra_fields()
  */
-function tracdelight_product_save($task) {
-  entity_save('tracdelight_product', $task);
-}
+function tracdelight_field_extra_fields() {
 
-/**
- * Delete single task.
- */
-function tracdelight_product_delete($task) {
-  entity_delete('tracdelight_product', entity_id('tracdelight_product' ,$task));
-}
 
-/**
- * Delete multiple tasks.
- */
-function tracdelight_product_delete_multiple($task_ids) {
-  entity_delete_multiple('tracdelight_product', $task_ids);
+  $extra_fields = array();
+
+  $extra_fields['tracdelight_product']['tracdelight_product'] = array(
+    'display' => array(
+      'ein' => array(
+        'label' => t('EIN'),
+        'weight' => 0,
+      ),
+    ),
+  );
+
+  return $extra_fields;
 }
