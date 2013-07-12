@@ -7,7 +7,7 @@ class TracdelightProductUIController extends EntityDefaultUIController {
 function tracdelight_product_add() {
   $tracdelight_product = (object) array(
     'ein' => '',
-    'detail_page_url' => '',
+    'detailpageurl' => '',
     'type' => 'tracdelight_product',
   );
 
@@ -15,12 +15,132 @@ function tracdelight_product_add() {
 }
 
 
+function tracdelight_product_add_form_submit($form, &$form_state) {
+
+  $form_state['values']['is_new'] = isset($form_state['tracdelight_product']->is_new) ? $form_state['tracdelight_product']->is_new : FALSE;
+
+  $tracdelight_product_submission = (object) $form_state['values'];
+  field_attach_submit('tracdelight_product', $tracdelight_product_submission, $form, $form_state);
+  $tracdelight_product = tracdelight_product_save($tracdelight_product_submission);
+
+  $form_state['redirect'] = "tracdelight_product/$tracdelight_product->ein";
+}
+
+function tracdelight_product_form($form, &$form_state, $tracdelight_product) {
+
+  $form_state['tracdelight_product'] = $tracdelight_product;
+
+  $form['ein'] = array(
+    '#type' => 'textfield',
+    '#required' => TRUE,
+    '#title' => t('EIN'),
+    '#default_value' => isset($tracdelight_product->ein) ? $tracdelight_product->ein : NULL,
+    '#disabled' => !(isset($tracdelight_product->is_new) && $tracdelight_product->is_new),
+  );
+
+  $form['sku'] = array(
+    '#type' => 'textfield',
+    '#required' => TRUE,
+    '#title' => t('SKU'),
+    '#default_value' => isset($tracdelight_product->sku) ? $tracdelight_product->sku : NULL,
+  );
+
+  $form['detailpageurl'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Page URL'),
+    '#default_value' => isset($tracdelight_product->detailpageurl) ? $tracdelight_product->detailpageurl : NULL,
+    '#required' => TRUE,
+  );
+
+  $form['title'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Title'),
+    '#default_value' => isset($tracdelight_product->title) ? $tracdelight_product->title : NULL,
+    '#required' => TRUE,
+  );
+
+  $form['manufacturer'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Manufacturer'),
+    '#default_value' => isset($tracdelight_product->manufacturer) ? $tracdelight_product->manufacturer : NULL,
+  );
+
+  $form['brand'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Brand'),
+    '#default_value' => isset($tracdelight_product->brand) ? $tracdelight_product->brand : NULL,
+    '#required' => TRUE,
+  );
+
+  $form['description'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Description'),
+    '#default_value' => isset($tracdelight_product->description) ? $tracdelight_product->description : NULL,
+    '#required' => TRUE,
+  );
+
+  $form['shippingcosts'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Shipping costs'),
+    '#default_value' => isset($tracdelight_product->shippingcosts) ? $tracdelight_product->shippingcosts : NULL,
+  );
+
+  $form['deliverytime'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Delivery time'),
+    '#default_value' => isset($tracdelight_product->deliverytime) ? $tracdelight_product->deliverytime : NULL,
+  );
+
+  $form['shop'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Shopname'),
+    '#default_value' => isset($tracdelight_product->shop) ? $tracdelight_product->shop : NULL,
+  );
+
+  $form['amount'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Amount'),
+    '#default_value' => isset($tracdelight_product->amount) ? $tracdelight_product->amount : NULL,
+    '#required' => TRUE,
+  );
+
+  $form['currencycode'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Currency code'),
+    '#default_value' => isset($tracdelight_product->currencycode) ? $tracdelight_product->currencycode : NULL,
+    '#required' => TRUE,
+  );
+
+  $form['image'] = array(
+    '#title' => t('Image'),
+    '#type' => 'managed_file',
+    '#default_value' => isset($tracdelight_product->image) ? $tracdelight_product->image : NULL,
+    '#upload_location' => 'public://image_example_images/',
+    '#required' => TRUE,
+  );
+
+  $form['active'] = array(
+    '#type' => 'radios',
+    '#title' => t('Active'),
+    '#default_value' => isset($tracdelight_product->active) ? $tracdelight_product->active : 1,
+    '#options' => array(0 => t('Closed'), 1 => t('Active')),
+    '#required' => TRUE,
+  );
+
+  $form['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Save'),
+    '#submit' => array('tracdelight_product_add_form_submit'),
+    '#weight' => 100,
+  );
+
+  field_attach_form('tracdelight_product', $tracdelight_product, $form, $form_state);
+
+  return $form;
+}
 
 
-/**
- * Provides a list of existing entities and the ability to add more. Tabs
- * provide field and display management.
- */
+
 function tracdelight_product_admin_page() {
   $content = array();
   $content[] = array(
@@ -32,28 +152,23 @@ function tracdelight_product_admin_page() {
 }
 
 
-
-/*
- *
-
-CREATE TABLE `tracdelight_product` (
-  `ein` varchar(16) NOT NULL COMMENT 'Product EIN',
-  `detail_page_url` varchar(512) DEFAULT '' COMMENT 'Detail Page Url.',
-  `title` varchar(256) DEFAULT '' COMMENT 'Title of a product.',
-  `manufacturer` varchar(256) DEFAULT '' COMMENT 'Manufacturer of a product.',
-  `brand` varchar(256) DEFAULT '' COMMENT 'Brand of a product.',
-  `description` text COMMENT 'Description of a product.',
-  `amount` decimal(7,2) DEFAULT NULL COMMENT 'Amount of a product.',
-  `price_old` decimal(7,2) DEFAULT NULL COMMENT 'Old price of a product.',
-  `base_price` decimal(7,2) DEFAULT NULL COMMENT 'Base price of a product.',
-  `currency_code` varchar(8) DEFAULT '' COMMENT 'Currency code of a product.',
-  `formatted_price` varchar(64) DEFAULT '' COMMENT 'Formatted price of a product.',
-  `formatted_price_old` varchar(64) DEFAULT '' COMMENT 'Old formatted price of a product.',
-  `image_base` varchar(256) DEFAULT '' COMMENT 'Base image path of a product.',
-  `active` int(11) DEFAULT '1' COMMENT 'Product is available in shop',
-  PRIMARY KEY (`ein`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-
-
-
+/**
+ * @param $form
+ * @param $form_state
+ * @return mixed
  */
+function tracdelight_admin($form, &$form_state) {
+  $form = array();
+
+  $form['tracdelight_access_key'] = array(
+    '#type' => 'textfield',
+    '#title' => t('tracdelight AccessKey'),
+    '#default_value' => variable_get('tracdelight_access_key', ''),
+    '#size' => 32,
+    '#maxlength' => 32,
+    '#required' => TRUE,
+  );
+
+
+  return system_settings_form($form);
+}

@@ -16,10 +16,10 @@ function tracdelight_schema() {
       'sku'           => array(
         'description'   => 'SKU of the product',
         'type' => 'varchar',
-        'length' => 16,
+        'length' => 64,
         'not null'      => TRUE,
       ),
-      'detail_page_url' => array(
+      'detailpageurl' => array(
         'description' => 'Shop URL to the product.',
         'type' => 'varchar',
         'length' => 512,
@@ -52,12 +52,12 @@ function tracdelight_schema() {
         'type' => 'text',
         'not null' => TRUE,
       ),
-      'shipping_costs' => array(
+      'shippingcosts' => array(
         'description' => 'Shipping costs of the product.',
         'type' => 'text',
         'not null' => TRUE,
       ),
-      'delivery_time' => array(
+      'deliverytime' => array(
         'description' => 'Delivery time of the product.',
         'type' => 'text',
         'not null' => TRUE,
@@ -74,7 +74,7 @@ function tracdelight_schema() {
         'scale' => 2,
         'not null' => TRUE,
       ),
-      'currency_code' => array(
+      'currencycode' => array(
         'description' => 'Currency code of a product.',
         'type' => 'varchar',
         'length' => 8,
@@ -108,3 +108,8 @@ function tracdelight_schema() {
 }
 
 
+function tracdelight_uninstall() {
+
+  variable_del('tracdelight_access_key');
+
+}

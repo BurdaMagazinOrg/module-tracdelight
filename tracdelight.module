@@ -1,5 +1,11 @@
 <?php
 
+module_load_include('inc', 'tracdelight', 'includes/tracdelight_product');
+
+
+define('TRACDELIGHT_MAX_ITEMS', 200);
+define('TRACDELIGHT_API_URL', 'http://sapi.edelight.biz/api');
+
 /**
  * Implements hook_entity_info().
  */
@@ -17,7 +23,6 @@ function tracdelight_entity_info() {
         'admin' => array(
           'path' => 'admin/structure/tracdelight_product/manage',
           'access arguments' => array('administer tracdelight_product entities'),
-
         ),
       )
     ),
@@ -27,6 +32,7 @@ function tracdelight_entity_info() {
     'entity class' => 'TracdelightProduct',
     'admin ui' => array(
       'path' => 'admin/content/tracdelight_product',
+      'file' => 'tracdelight.admin.inc',
     ),
     'access callback' => 'tracdelight_product_access',
     'module' => 'tracdelight',
@@ -41,7 +47,11 @@ function tracdelight_entity_info() {
   return $info;
 }
 
+function tracdelight_product_get_form($entity_type, $entity, $op = 'edit', $form_state = array()) {
 
+  form_load_include($form_state, 'inc', 'tracdelight', 'tracdelight.admin');
+  return entity_ui_get_form($entity_type, $entity, $op, $form_state);
+}
 
 /**
  * Implements hook_menu().
@@ -51,6 +61,10 @@ function tracdelight_menu() {
   $items = entity_ui_controller('tracdelight_product')->hook_menu();
   foreach ($items as &$item) {
     $item['file'] = (isset($item['file'])) ? 'includes/tracdelight_product.inc' : NULL;
+
+    if (isset($item['page callback']) && $item['page callback'] == 'entity_ui_get_form') {
+      $item['page callback'] = 'tracdelight_product_get_form';
+    }
   }
 
   $items['admin/structure/tracdelight_product/manage'] = array(
@@ -67,6 +81,15 @@ function tracdelight_menu() {
     'access arguments' => array('view tracdelight_product entities'),
     'file' => 'includes/tracdelight_product.inc',
     'type' => MENU_CALLBACK,
+  );
+
+  $items['admin/config/services/tracdelight'] = array(
+    'title' => 'tracdelight',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('tracdelight_admin'),
+    'access arguments' => array('administer tracdelight_product entities'),
+    'type' => MENU_NORMAL_ITEM,
+    'file' => 'tracdelight.admin.inc'
   );
 
   return $items;
@@ -130,150 +153,158 @@ function tracdelight_field_extra_fields() {
 }
 
 
+function tracdelight_call_api($params, $items) {
+
+  $access_key = variable_get('tracdelight_access_key');
+
+  $url = TRACDELIGHT_API_URL . '?' . drupal_http_build_query(
+      array(
+        'AccessKey' => $access_key,
+        'Extracted' => 'false',
+        'Operation' => 'ItemSearch',
+        'Items' => $items,
+        'Output' => 'json',
+        'Fields' => 'modified',
+        'Sort' => '-modified',
+      ) + $params
+    );
+
+  return drupal_http_request(
+    url($url, array('absolute' => TRUE)),
+    array(
+      'Content-Type' => 'text/xml',
+    ),
+    'GET'
+  );
+}
+
+function tracdelight_get_image($product, $image_path = 'src/normal/') {
+
+  $tries = 0;
+  do {
+
+    $tries++;
+
+    $image = drupal_http_request(
+      url($product['imagebaseurl'] . $image_path . $product['ein'] . '.jpg', array('absolute' => TRUE)),
+      array('Content-Type' => 'image/jpeg'),
+      'GET'
+    );
+  } while ((isset($image->error) || !$image->data) && $tries < 3);
+
+  if (!$image->data) {
+
+    $error_msg = 'Error Message: ' . isset($image->error) ? $image->error : "Couldn't retrieve image";
+
+    throw new TracdelightImageException($error_msg, $product['ein'], 'original');
+  }
+
+  return $image->data;
+}
+
+function tracdelight_import_products($query, $items = TRACDELIGHT_MAX_ITEMS, $last_run = 0) {
+
+  $active_products = array();
+
+  $response = tracdelight_call_api($query, $items);
+
+  if ($response->code == 200) {
+
+    $response = json_decode($response->data, 1);
+
+    foreach ($response['itemsearchresponse']['items']['item'] as $item) {
+
+      $active_products[] = $item['ein'];
+
+      if ($last_run >= $item['modified']) {
+        continue;
+      }
+
+      $image_data = tracdelight_get_image($item);
+
+      $file = file_save_data($image_data, 'public://' . $item['ein'] . '.jpg', FILE_EXISTS_REPLACE);
+      image_path_flush($file->uri);
+
+      $item['shop'] = $item['shop']->name;
+      $item['amount'] = $item['listprice']['amount'];
+      $item['currencycode'] = $item['listprice']['currencycode'];
+      $item['image'] = $file->fid;
+      $item['active'] = 1;
+
+      module_load_include('inc', 'tracdelight', 'includes/tracdelight_product');
+
+      $product = entity_create('tracdelight_product', $item);
+
+      $entity_exists = entity_load('tracdelight_product', array($product->ein));
+      $product->is_new = empty($entity_exists);
+
+      tracdelight_product_save($product);
+
+    }
+  }
+
+  else {
+    throw new Exception("Could not reach tracdelight API");
+  }
+
+  return $active_products;
+}
+
+
 /**
- * Access callback for Product.
+ * * Implementation of hook_cron_queue_info()
  */
-function tracdelight_product_access($op, $tracdelight_product, $account = NULL, $entity_type = NULL) {
-
-  global $user;
-  if (!isset($account)) {
-    $account = $user;
-  }
-  switch ($op) {
-    case 'create':
-      return user_access('create tracdelight_product entities', $account);
-    case 'view':
-      return user_access('view tracdelight_product entities', $account);
-    case 'edit':
-    case 'update':
-      return user_access('edit any tracdelight_product entities')
-        || (user_access('edit own tracdelight_product entities') && ($tracdelight_product->uid == $account->uid));
-    case 'delete':
-      return user_access('delete any tracdelight_product entities')
-        || (user_access('delete own tracdelight_product entities') && ($tracdelight_product->uid == $account->uid));
-  }
+function tracdelight_cron_queue_info() {
+  $queues['tracdelight'] = array(
+    'worker callback' => 'tracdelight_run', // This is the callback function for each queue item.
+    'time' => 180, // This is the max run time per cron run in seconds.
+  );
+  return $queues;
 }
 
-function tracdelight_product_add_form_submit($form, &$form_state) {
+/**
+ * Implementation of hook_cron()
+ */
+function tracdelight_cron() {
 
-  $form_state['values']['is_new'] = isset($form_state['tracdelight_product']->is_new) ? $form_state['tracdelight_product']->is_new : FALSE;
+  $queue = DrupalQueue::get('tracdelight');
 
-  $tracdelight_product_submission = (object) $form_state['values'];
-  field_attach_submit('tracdelight_product', $tracdelight_product_submission, $form, $form_state);
-  $tracdelight_product = tracdelight_product_save($tracdelight_product_submission);
+  $page = 0;
 
-  $form_state['redirect'] = "tracdelight_product/$tracdelight_product->ein";
+  $query = new EntityFieldQuery();
+  $query
+    ->entityCondition('entity_type', 'tracdelight_product');
+
+  while (TRUE) {
+    $result = $query->execute();
+    if (!isset($result['tracdelight_product']) || count($result['tracdelight_product']) <= 0) {
+      break;
+    }
+    $queue->createItem($result);
+    $query->range(++$page * TRACDELIGHT_MAX_ITEMS, TRACDELIGHT_MAX_ITEMS);
+  }
+
+
 }
 
-function tracdelight_product_form($form, &$form_state, $tracdelight_product) {
+/**
+ * Worker Callback for the tracdelight cron queue.
+ */
+function tracdelight_run($item) {
 
-  $form_state['tracdelight_product'] = $tracdelight_product;
 
-  $form['ein'] = array(
-    '#type' => 'textfield',
-    '#required' => TRUE,
-    '#title' => t('EIN'),
-    '#default_value' => isset($tracdelight_product->ein) ? $tracdelight_product->ein : NULL,
-    '#disabled' => !(isset($tracdelight_product->is_new) && $tracdelight_product->is_new),
-  );
+  $eins = array_keys($item['tracdelight_product']);
 
-  $form['sku'] = array(
-    '#type' => 'textfield',
-    '#required' => TRUE,
-    '#title' => t('SKU'),
-    '#default_value' => isset($tracdelight_product->sku) ? $tracdelight_product->sku : NULL,
-  );
+  $active_products = tracdelight_import_products(array('EIN' => implode(',', $eins)), TRACDELIGHT_MAX_ITEMS);
 
-  $form['detail_page_url'] = array(
-    '#type' => 'textfield',
-    '#title' => t('Page URL'),
-    '#default_value' => isset($tracdelight_product->detail_page_url) ? $tracdelight_product->detail_page_url : NULL,
-    '#required' => TRUE,
-  );
+  $inactive_products = array_diff($active_products, $eins);
 
-  $form['title'] = array(
-    '#type' => 'textfield',
-    '#title' => t('Title'),
-    '#default_value' => isset($tracdelight_product->title) ? $tracdelight_product->title : NULL,
-    '#required' => TRUE,
-  );
-
-  $form['manufacturer'] = array(
-    '#type' => 'textfield',
-    '#title' => t('Manufacturer'),
-    '#default_value' => isset($tracdelight_product->manufacturer) ? $tracdelight_product->manufacturer : NULL,
-  );
-
-  $form['brand'] = array(
-    '#type' => 'textfield',
-    '#title' => t('Brand'),
-    '#default_value' => isset($tracdelight_product->brand) ? $tracdelight_product->brand : NULL,
-    '#required' => TRUE,
-  );
-
-  $form['description'] = array(
-    '#type' => 'textfield',
-    '#title' => t('Description'),
-    '#default_value' => isset($tracdelight_product->description) ? $tracdelight_product->description : NULL,
-    '#required' => TRUE,
-  );
-
-  $form['shipping_costs'] = array(
-    '#type' => 'textfield',
-    '#title' => t('Shipping costs'),
-    '#default_value' => isset($tracdelight_product->shipping_costs) ? $tracdelight_product->shipping_costs : NULL,
-  );
-
-  $form['delivery_time'] = array(
-    '#type' => 'textfield',
-    '#title' => t('Delivery time'),
-    '#default_value' => isset($tracdelight_product->delivery_time) ? $tracdelight_product->delivery_time : NULL,
-  );
-
-  $form['shop'] = array(
-    '#type' => 'textfield',
-    '#title' => t('Shopname'),
-    '#default_value' => isset($tracdelight_product->shop) ? $tracdelight_product->shop : NULL,
-  );
-
-  $form['amount'] = array(
-    '#type' => 'textfield',
-    '#title' => t('Amount'),
-    '#default_value' => isset($tracdelight_product->amount) ? $tracdelight_product->amount : NULL,
-    '#required' => TRUE,
-  );
-
-  $form['currency_code'] = array(
-    '#type' => 'textfield',
-    '#title' => t('Currency code'),
-    '#default_value' => isset($tracdelight_product->currency_code) ? $tracdelight_product->currency_code : NULL,
-    '#required' => TRUE,
-  );
-
-  $form['image'] = array(
-    '#title' => t('Image'),
-    '#type' => 'managed_file',
-    '#default_value' => isset($tracdelight_product->image) ? $tracdelight_product->image : NULL,
-    '#upload_location' => 'public://image_example_images/',
-    '#required' => TRUE,
-  );
-
-  $form['active'] = array(
-    '#type' => 'radios',
-    '#title' => t('Active'),
-    '#default_value' => isset($tracdelight_product->active) ? $tracdelight_product->active : 1,
-    '#options' => array(0 => t('Closed'), 1 => t('Active')),
-    '#required' => TRUE,
-  );
-
-  $form['submit'] = array(
-    '#type' => 'submit',
-    '#value' => t('Save'),
-    '#submit' => array('tracdelight_product_add_form_submit'),
-    '#weight' => 100,
-  );
-
-  field_attach_form('tracdelight_product', $tracdelight_product, $form, $form_state);
-
-  return $form;
+  if ($inactive_products) {
+    db_update('tracdelight_product')
+      ->fields(array(
+        'active' => 0,
+      ))
+      ->condition('ein', $inactive_products)
+      ->execute();
+  }
 }

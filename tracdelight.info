@@ -2,5 +2,6 @@ name = tracdelight
 core = 7.x
 
 files[] = tracdelight.admin.inc
+files[] = tracdelight.drush.inc
 files[] = includes/tracdelight_product.inc
-files[] = includes/tracdelight_product_controller.inc
+files[] = includes/tracdelight_product.controller.inc

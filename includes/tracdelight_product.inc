@@ -3,10 +3,33 @@
 class TracdelightProduct extends Entity {
 
   public function defaultLabel() {
-    return isset($this->ein) ? $this->ein : NULL;
+    return isset($this->ein) ? $this->title . '-' . $this->ein : NULL;
   }
 }
 
+/**
+ * Access callback for Product.
+ */
+function tracdelight_product_access($op, $tracdelight_product, $account = NULL, $entity_type = NULL) {
+
+  global $user;
+  if (!isset($account)) {
+    $account = $user;
+  }
+  switch ($op) {
+    case 'create':
+      return user_access('create tracdelight_product entities', $account);
+    case 'view':
+      return user_access('view tracdelight_product entities', $account);
+    case 'edit':
+    case 'update':
+      return user_access('edit any tracdelight_product entities')
+      || (user_access('edit own tracdelight_product entities') && ($tracdelight_product->uid == $account->uid));
+    case 'delete':
+      return user_access('delete any tracdelight_product entities')
+      || (user_access('delete own tracdelight_product entities') && ($tracdelight_product->uid == $account->uid));
+  }
+}
 
 
 
