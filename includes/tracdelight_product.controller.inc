@@ -1,4 +1,3 @@
 <?php
+class TracdelightProductController extends EntityAPIController {}
 
-class TracdelightProductController extends EntityAPIController {
-}

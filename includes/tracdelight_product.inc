@@ -1,5 +1,4 @@
 <?php
-
 class TracdelightProduct extends Entity {
 
   public function defaultLabel() {
@@ -19,20 +18,18 @@ function tracdelight_product_access($op, $tracdelight_product, $account = NULL, 
   switch ($op) {
     case 'create':
       return user_access('create tracdelight_product entities', $account);
+
     case 'view':
       return user_access('view tracdelight_product entities', $account);
+
     case 'edit':
     case 'update':
-      return user_access('edit any tracdelight_product entities')
-      || (user_access('edit own tracdelight_product entities') && ($tracdelight_product->uid == $account->uid));
+      return user_access('edit any tracdelight_product entities') || (user_access('edit own tracdelight_product entities') && ($tracdelight_product->uid == $account->uid));
+
     case 'delete':
-      return user_access('delete any tracdelight_product entities')
-      || (user_access('delete own tracdelight_product entities') && ($tracdelight_product->uid == $account->uid));
+      return user_access('delete any tracdelight_product entities') || (user_access('delete own tracdelight_product entities') && ($tracdelight_product->uid == $account->uid));
   }
 }
-
-
-
 
 function tracdelight_product_uri($tracdelight_product) {
   return array(
@@ -40,9 +37,8 @@ function tracdelight_product_uri($tracdelight_product) {
   );
 }
 
-
 function tracdelight_product_load($ein = NULL, $reset = FALSE) {
-  $eins = (isset ($ein) ? array($ein) : array());
+  $eins = (isset($ein) ? array($ein) : array());
   $tracdelight_product = tracdelight_product_load_multiple($eins, $reset);
   return $tracdelight_product ? reset($tracdelight_product) : FALSE;
 }

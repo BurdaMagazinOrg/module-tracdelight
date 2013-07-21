@@ -1,11 +1,8 @@
 <?php
-
-class TracdelightProductUIController extends EntityDefaultUIController {
-
-}
+class TracdelightProductUIController extends EntityDefaultUIController {}
 
 function tracdelight_product_add() {
-  $tracdelight_product = (object) array(
+  $tracdelight_product = (object)array(
     'ein' => '',
     'detailpageurl' => '',
     'type' => 'tracdelight_product',
@@ -13,7 +10,6 @@ function tracdelight_product_add() {
 
   return drupal_get_form('tracdelight_product_form', $tracdelight_product);
 }
-
 
 function tracdelight_product_add_form_submit($form, &$form_state) {
 
@@ -139,22 +135,21 @@ function tracdelight_product_form($form, &$form_state, $tracdelight_product) {
   return $form;
 }
 
-
-
 function tracdelight_product_admin_page() {
   $content = array();
   $content[] = array(
     '#type' => 'item',
-    '#markup' => t('Administration page for tracdelight products.')
+    '#markup' => t('Administration page for tracdelight products.'),
   );
 
   return $content;
 }
 
-
 /**
+ *
  * @param $form
  * @param $form_state
+ *
  * @return mixed
  */
 function tracdelight_admin($form, &$form_state) {
@@ -172,3 +167,4 @@ function tracdelight_admin($form, &$form_state) {
 
   return system_settings_form($form);
 }
+

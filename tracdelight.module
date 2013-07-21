@@ -1,4 +1,9 @@
 <?php
+/**
+ * @file
+ * Core functionality for the tracdelight module.
+ */
+
 
 module_load_include('inc', 'tracdelight', 'includes/tracdelight_product');
 
@@ -24,7 +29,7 @@ function tracdelight_entity_info() {
           'path' => 'admin/structure/tracdelight_product/manage',
           'access arguments' => array('administer tracdelight_product entities'),
         ),
-      )
+      ),
     ),
     'entity keys' => array(
       'id' => 'ein',
@@ -47,6 +52,21 @@ function tracdelight_entity_info() {
   return $info;
 }
 
+/**
+ * Wrapper for entity_ui_get_form to load includes.
+ *
+ * @param string $entity_type
+ *   Type of the entity
+ * @param StdClass $entity
+ *   The entity object
+ * @param string $op
+ *   Form operation
+ * @param array $form_state
+ *   The form_state array
+ *
+ * @return array
+ *   The product edit form
+ */
 function tracdelight_product_get_form($entity_type, $entity, $op = 'edit', $form_state = array()) {
 
   form_load_include($form_state, 'inc', 'tracdelight', 'tracdelight.admin');
@@ -59,7 +79,7 @@ function tracdelight_product_get_form($entity_type, $entity, $op = 'edit', $form
 function tracdelight_menu() {
 
   $items = entity_ui_controller('tracdelight_product')->hook_menu();
-  foreach ($items as &$item) {
+  foreach ($items as & $item) {
     $item['file'] = (isset($item['file'])) ? 'includes/tracdelight_product.inc' : NULL;
 
     if (isset($item['page callback']) && $item['page callback'] == 'entity_ui_get_form') {
@@ -89,7 +109,7 @@ function tracdelight_menu() {
     'page arguments' => array('tracdelight_admin'),
     'access arguments' => array('administer tracdelight_product entities'),
     'type' => MENU_NORMAL_ITEM,
-    'file' => 'tracdelight.admin.inc'
+    'file' => 'tracdelight.admin.inc',
   );
 
   return $items;
@@ -133,9 +153,8 @@ function tracdelight_permission() {
   );
 }
 
-
 /**
- * Implements hook_field_extra_fields()
+ * Implements hook_field_extra_fields().
  */
 function tracdelight_field_extra_fields() {
 
@@ -152,22 +171,45 @@ function tracdelight_field_extra_fields() {
   return $extra_fields;
 }
 
+/**
+ * Implements hook_ctools_plugin_directory().
+ */
+function tracdelight_ctools_plugin_directory($module, $plugin) {
+  if ($module == 'entityreference') {
+    return 'plugins/entityreference/' . $plugin;
+  }
+}
 
+
+/**
+ * Calls the tracdelight api.
+ *
+ * @param array $params
+ *   see http://itemsearch.edelight.biz/docs/html/
+ * @param $items
+ *   Number of items to be fetched
+ * @return object
+ *   Drupal response object
+ */
 function tracdelight_call_api($params, $items) {
+
+  if (isset($params['Query'])) {
+    $params['Query'] = '"' . $params['Query'] . '"';
+  }
 
   $access_key = variable_get('tracdelight_access_key');
 
   $url = TRACDELIGHT_API_URL . '?' . drupal_http_build_query(
-      array(
-        'AccessKey' => $access_key,
-        'Extracted' => 'false',
-        'Operation' => 'ItemSearch',
-        'Items' => $items,
-        'Output' => 'json',
-        'Fields' => 'modified',
-        'Sort' => '-modified',
-      ) + $params
-    );
+    array(
+      'AccessKey' => $access_key,
+      'Extracted' => 'false',
+      'Operation' => 'ItemSearch',
+      'Items' => $items,
+      'Output' => 'json',
+      'Fields' => 'modified',
+      'Sort' => '-modified',
+    ) + $params
+  );
 
   return drupal_http_request(
     url($url, array('absolute' => TRUE)),
@@ -178,6 +220,17 @@ function tracdelight_call_api($params, $items) {
   );
 }
 
+/**
+ * Fetch product image from api.
+ *
+ * @param array $product
+ *   A product array fetched from the api
+ * @param string $image_path
+ *   Path of the image which should be fetched. API Docs
+ * @return mixed
+ *   Data stream of the image
+ * @throws TracdelightImageException
+ */
 function tracdelight_get_image($product, $image_path = 'src/normal/') {
 
   $tries = 0;
@@ -202,6 +255,19 @@ function tracdelight_get_image($product, $image_path = 'src/normal/') {
   return $image->data;
 }
 
+/**
+ * Retrive product from api and creates or updates the entities.
+ *
+ * @param $query
+ *   @see http://itemsearch.edelight.biz/docs/html/
+ * @param int $items
+ *   Number of items to be fetched
+ * @param int $last_run
+ *   Timestamp of the last run. Used for cron
+ * @return array
+ *   Array of EINs which are active
+ * @throws Exception
+ */
 function tracdelight_import_products($query, $items = TRACDELIGHT_MAX_ITEMS, $last_run = 0) {
 
   $active_products = array();
@@ -214,7 +280,7 @@ function tracdelight_import_products($query, $items = TRACDELIGHT_MAX_ITEMS, $la
 
     foreach ($response['itemsearchresponse']['items']['item'] as $item) {
 
-      $active_products[] = $item['ein'];
+      $active_products[$item['ein']] = $item;
 
       if ($last_run >= $item['modified']) {
         continue;
@@ -239,10 +305,8 @@ function tracdelight_import_products($query, $items = TRACDELIGHT_MAX_ITEMS, $la
       $product->is_new = empty($entity_exists);
 
       tracdelight_product_save($product);
-
     }
   }
-
   else {
     throw new Exception("Could not reach tracdelight API");
   }
@@ -250,20 +314,21 @@ function tracdelight_import_products($query, $items = TRACDELIGHT_MAX_ITEMS, $la
   return $active_products;
 }
 
-
 /**
- * * Implementation of hook_cron_queue_info()
+ * * Implementation of hook_cron_queue_info().
  */
 function tracdelight_cron_queue_info() {
   $queues['tracdelight'] = array(
-    'worker callback' => 'tracdelight_run', // This is the callback function for each queue item.
-    'time' => 180, // This is the max run time per cron run in seconds.
+    // This is the callback function for each queue item.
+    'worker callback' => 'tracdelight_run',
+    // This is the max run time per cron run in seconds.
+    'time' => 180,
   );
   return $queues;
 }
 
 /**
- * Implementation of hook_cron()
+ * Implementation of hook_cron().
  */
 function tracdelight_cron() {
 
@@ -272,8 +337,7 @@ function tracdelight_cron() {
   $page = 0;
 
   $query = new EntityFieldQuery();
-  $query
-    ->entityCondition('entity_type', 'tracdelight_product');
+  $query->entityCondition('entity_type', 'tracdelight_product');
 
   while (TRUE) {
     $result = $query->execute();
@@ -283,8 +347,6 @@ function tracdelight_cron() {
     $queue->createItem($result);
     $query->range(++$page * TRACDELIGHT_MAX_ITEMS, TRACDELIGHT_MAX_ITEMS);
   }
-
-
 }
 
 /**
@@ -296,15 +358,14 @@ function tracdelight_run($item) {
   $eins = array_keys($item['tracdelight_product']);
 
   $active_products = tracdelight_import_products(array('EIN' => implode(',', $eins)), TRACDELIGHT_MAX_ITEMS);
+  $active_products_eins = array_keys($active_products);
 
-  $inactive_products = array_diff($active_products, $eins);
+  $inactive_products = array_diff($active_products_eins, $eins);
 
   if ($inactive_products) {
-    db_update('tracdelight_product')
-      ->fields(array(
+    db_update('tracdelight_product')->fields(array(
         'active' => 0,
-      ))
-      ->condition('ein', $inactive_products)
-      ->execute();
+      ))->condition('ein', $inactive_products)->execute();
   }
 }
+

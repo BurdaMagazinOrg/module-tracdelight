@@ -17,9 +17,9 @@ function tracdelight_drush_command() {
   $items = array();
   $items['tracdelight-import'] = array(
     'description' => dt('Imports products.'),
-    'arguments'   => array(
-      'query'    => dt('SearchQuery'),
-      'items'    => dt('Items'),
+    'arguments' => array(
+      'query' => dt('SearchQuery'),
+      'items' => dt('Items'),
     ),
     'aliases' => array('ti'),
   );
@@ -36,11 +36,10 @@ function drush_tracdelight_import($query = NULL, $items = 10) {
   try {
 
     tracdelight_import_products(array('Query' => $query), $items);
-  } catch (Exception $e) {
+  }
+  catch(Exception$e) {
 
     drush_set_error('error', $e->getMessage());
-
-
   }
-
 }
+

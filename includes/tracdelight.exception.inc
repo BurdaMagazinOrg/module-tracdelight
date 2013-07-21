@@ -1,5 +1,4 @@
 <?php
-
 class TracdelightImageException extends Exception {
 
   public $ein;
@@ -13,8 +12,6 @@ class TracdelightImageException extends Exception {
 
     $this->ein = $ein;
     $this->imageType = $imageType;
-
   }
-
-
 }
+

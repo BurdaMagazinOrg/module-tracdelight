@@ -5,3 +5,5 @@ files[] = tracdelight.admin.inc
 files[] = tracdelight.drush.inc
 files[] = includes/tracdelight_product.inc
 files[] = includes/tracdelight_product.controller.inc
+files[] = plugins/entityreference/selection/tracdelight.inc
+files[] = plugins/entityreference/selection/EntityReference_SelectionHandler_Tracdelight.class.php
