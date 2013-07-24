@@ -7,6 +7,11 @@ function tracdelight_schema() {
   $schema = array();
   $schema['tracdelight_product'] = array(
     'fields' => array(
+      'id' => array(
+        'description' => 'Id',
+        'type' => 'serial',
+        'not null' => TRUE,
+      ),
       'ein' => array(
         'description' => 'Product EIN',
         'type' => 'varchar',
@@ -67,27 +72,6 @@ function tracdelight_schema() {
         'type' => 'text',
         'not null' => TRUE,
       ),
-      'amount' => array(
-        'description' => 'Amount of a product.',
-        'type' => 'numeric',
-        'precision' => 7,
-        'scale' => 2,
-        'not null' => TRUE,
-      ),
-      'currencycode' => array(
-        'description' => 'Currency code of a product.',
-        'type' => 'varchar',
-        'length' => 8,
-        'not null' => TRUE,
-        'default' => '',
-      ),
-      'image' => array(
-        'description' => 'Image fid.',
-        'type' => 'varchar',
-        'length' => 256,
-        'not null' => TRUE,
-        'default' => '',
-      ),
       'active' => array(
         'description' => 'Product is available in shop',
         'type' => 'int',
@@ -101,13 +85,80 @@ function tracdelight_schema() {
         'default' => 1,
       ),
     ),
-    'primary key' => array('ein'),
+    'primary key' => array('id'),
+    'unique keys' => array(
+      'ein' => array('ein'),
+    ),
   );
 
   return $schema;
 }
 
+
+/**
+ * Implements hook_install().
+ */
+function tracdelight_install() {
+
+
+  $fields = array(
+    'field_amount' => array(
+      'type' => 'money',
+      'label' => 'Amount',
+    ),
+    'field_product_image' => array(
+      'type' => 'image',
+      'label' => 'Image',
+    ),
+  );
+
+  foreach ($fields as $field_name => $field) {
+    // Check if the field already exists.
+    if (!field_info_field($field_name)) {
+      $new_field = array(
+        'field_name' => $field_name,
+        'type' => $field['type'],
+      );
+      field_create_field($new_field);
+
+      $field_instance = array(
+        'field_name' => $field_name,
+        'entity_type' => 'tracdelight_product',
+        'bundle' => 'tracdelight_product',
+        'label' => $field['label'],
+        'widget' => array(),
+        'formatter' => array(),
+        'settings' => array(),
+      );
+      field_create_instance($field_instance);
+    }
+
+  }
+
+}
+
+
+/**
+ * Implements hook_uninstall().
+ */
 function tracdelight_uninstall() {
+
+  $fields = array(
+    'field_amount',
+    'field_product_image'
+  );
+
+  foreach ($fields as $field_name) {
+
+    field_delete_field($field_name);
+
+    // Find all fields and delete instance.
+    $instances = field_info_instances('tracdelight_product', $field_name);
+    foreach ($instances as $instance_name => $instance) {
+      field_delete_instance($instance);
+    }
+  }
+  db_drop_table('tracdelight_product');
 
   variable_del('tracdelight_access_key');
 }

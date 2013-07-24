@@ -93,28 +93,6 @@ function tracdelight_product_form($form, &$form_state, $tracdelight_product) {
     '#default_value' => isset($tracdelight_product->shop) ? $tracdelight_product->shop : NULL,
   );
 
-  $form['amount'] = array(
-    '#type' => 'textfield',
-    '#title' => t('Amount'),
-    '#default_value' => isset($tracdelight_product->amount) ? $tracdelight_product->amount : NULL,
-    '#required' => TRUE,
-  );
-
-  $form['currencycode'] = array(
-    '#type' => 'textfield',
-    '#title' => t('Currency code'),
-    '#default_value' => isset($tracdelight_product->currencycode) ? $tracdelight_product->currencycode : NULL,
-    '#required' => TRUE,
-  );
-
-  $form['image'] = array(
-    '#title' => t('Image'),
-    '#type' => 'managed_file',
-    '#default_value' => isset($tracdelight_product->image) ? $tracdelight_product->image : NULL,
-    '#upload_location' => 'public://image_example_images/',
-    '#required' => TRUE,
-  );
-
   $form['active'] = array(
     '#type' => 'radios',
     '#title' => t('Active'),

@@ -7,3 +7,8 @@ files[] = includes/tracdelight_product.inc
 files[] = includes/tracdelight_product.controller.inc
 files[] = plugins/entityreference/selection/tracdelight.inc
 files[] = plugins/entityreference/selection/EntityReference_SelectionHandler_Tracdelight.class.php
+
+dependencies[] = field_ui
+dependencies[] = entityreference
+dependencies[] = money
+dependencies[] = image

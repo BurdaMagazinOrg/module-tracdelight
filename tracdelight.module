@@ -32,7 +32,7 @@ function tracdelight_entity_info() {
       ),
     ),
     'entity keys' => array(
-      'id' => 'ein',
+      'id' => 'id',
     ),
     'entity class' => 'TracdelightProduct',
     'admin ui' => array(
@@ -91,6 +91,8 @@ function tracdelight_menu() {
     'title' => 'Administer tracdelight_product entity type',
     'page callback' => 'tracdelight_product_admin_page',
     'access arguments' => array('administer tracdelight_product entities'),
+    'file' => 'tracdelight.admin.inc',
+
   );
 
   $items['tracdelight_product/%tracdelight_product'] = array(
@@ -165,6 +167,50 @@ function tracdelight_field_extra_fields() {
         'label' => t('EIN'),
         'weight' => 0,
       ),
+      'sku' => array(
+        'label' => t('SKU'),
+        'weight' => 0,
+      ),
+      'title' => array(
+        'label' => t('Title'),
+        'weight' => 0,
+      ),
+      'detailpageurl' => array(
+        'label' => t('Page URL'),
+        'weight' => 0,
+      ),
+      'manufacturer' => array(
+        'label' => t('Manufacturer'),
+        'weight' => 0,
+      ),
+      'brand' => array(
+        'label' => t('Brand'),
+        'weight' => 0,
+      ),
+      'description' => array(
+        'label' => t('Description'),
+        'weight' => 0,
+      ),
+      'shippingcosts' => array(
+        'label' => t('Shipping costs'),
+        'weight' => 0,
+      ),
+      'deliverytime' => array(
+        'label' => t('Delivery time'),
+        'weight' => 0,
+      ),
+      'shop' => array(
+        'label' => t('Shop'),
+        'weight' => 0,
+      ),
+      'active' => array(
+        'label' => t('Active'),
+        'weight' => 0,
+      ),
+      'modified' => array(
+        'label' => t('Modified'),
+        'weight' => 0,
+      ),
     ),
   );
 
@@ -198,6 +244,10 @@ function tracdelight_call_api($params, $items) {
   }
 
   $access_key = variable_get('tracdelight_access_key');
+
+  if (!$access_key) {
+    throw new Exception('No access key defiend');
+  }
 
   $url = TRACDELIGHT_API_URL . '?' . drupal_http_build_query(
     array(
@@ -292,17 +342,26 @@ function tracdelight_import_products($query, $items = TRACDELIGHT_MAX_ITEMS, $la
       image_path_flush($file->uri);
 
       $item['shop'] = $item['shop']->name;
-      $item['amount'] = $item['listprice']['amount'];
-      $item['currencycode'] = $item['listprice']['currencycode'];
-      $item['image'] = $file->fid;
+      $item['field_amount'][LANGUAGE_NONE][0]['amount'] = $item['listprice']['amount'];
+      $item['field_amount'][LANGUAGE_NONE][0]['currency'] = $item['listprice']['currencycode'];
+      $item['field_product_image'][LANGUAGE_NONE][0]['fid'] = $file->fid;
       $item['active'] = 1;
 
       module_load_include('inc', 'tracdelight', 'includes/tracdelight_product');
 
       $product = entity_create('tracdelight_product', $item);
 
-      $entity_exists = entity_load('tracdelight_product', array($product->ein));
-      $product->is_new = empty($entity_exists);
+      $query = new EntityFieldQuery();
+
+      $query->entityCondition('entity_type', 'tracdelight_product')
+        ->propertyCondition('ein', $product->ein);
+
+      $result = $query->execute();
+      if ($result['tracdelight_product']) {
+
+        $product->is_new = FALSE;
+        $product->id = current(array_keys($result['tracdelight_product']));
+      }
 
       tracdelight_product_save($product);
     }
