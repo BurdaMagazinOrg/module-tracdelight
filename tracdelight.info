@@ -10,5 +10,4 @@ files[] = plugins/entityreference/selection/EntityReference_SelectionHandler_Tra
 
 dependencies[] = field_ui
 dependencies[] = entityreference
-dependencies[] = money
 dependencies[] = image

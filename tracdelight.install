@@ -84,6 +84,11 @@ function tracdelight_schema() {
         'not null' => TRUE,
         'default' => 1,
       ),
+      'formattedprice' => array(
+        'description' => 'Price of the product',
+        'type' => 'text',
+        'not null' => TRUE,
+      ),
     ),
     'primary key' => array('id'),
     'unique keys' => array(
@@ -102,10 +107,6 @@ function tracdelight_install() {
 
 
   $fields = array(
-    'field_amount' => array(
-      'type' => 'money',
-      'label' => 'Amount',
-    ),
     'field_product_image' => array(
       'type' => 'image',
       'label' => 'Image',
@@ -144,7 +145,6 @@ function tracdelight_install() {
 function tracdelight_uninstall() {
 
   $fields = array(
-    'field_amount',
     'field_product_image'
   );
 

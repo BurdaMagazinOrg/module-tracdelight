@@ -105,6 +105,23 @@ function tracdelight_menu() {
     'type' => MENU_CALLBACK,
   );
 
+  // 'View' tab for an individual entity page.
+  $items['tracdelight_product/%tracdelight_product/view'] = array(
+    'title' => 'View',
+    'type' => MENU_DEFAULT_LOCAL_TASK,
+    'weight' => -10,
+  );
+
+  // 'Edit' tab for an individual entity page.
+  $items['tracdelight_product/%tracdelight_product/edit'] = array(
+    'title' => 'Edit',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('tracdelight_product_form', 3),
+    'access arguments' => array('edit any tracdelight_product entities'),
+    'type' => MENU_LOCAL_TASK,
+    'file' => 'tracdelight.admin.inc',
+  );
+
   $items['admin/config/services/tracdelight'] = array(
     'title' => 'tracdelight',
     'page callback' => 'drupal_get_form',
@@ -113,6 +130,10 @@ function tracdelight_menu() {
     'type' => MENU_NORMAL_ITEM,
     'file' => 'tracdelight.admin.inc',
   );
+
+
+
+
 
   return $items;
 }
@@ -342,8 +363,7 @@ function tracdelight_import_products($query, $items = TRACDELIGHT_MAX_ITEMS, $la
       image_path_flush($file->uri);
 
       $item['shop'] = $item['shop']->name;
-      $item['field_amount'][LANGUAGE_NONE][0]['amount'] = $item['listprice']['amount'];
-      $item['field_amount'][LANGUAGE_NONE][0]['currency'] = $item['listprice']['currencycode'];
+      $item['formattedprice'] = $item['listprice']['formattedprice'];
       $item['field_product_image'][LANGUAGE_NONE][0]['fid'] = $file->fid;
       $item['active'] = 1;
 

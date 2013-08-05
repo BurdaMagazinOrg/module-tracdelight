@@ -19,7 +19,7 @@ function tracdelight_product_add_form_submit($form, &$form_state) {
   field_attach_submit('tracdelight_product', $tracdelight_product_submission, $form, $form_state);
   $tracdelight_product = tracdelight_product_save($tracdelight_product_submission);
 
-  $form_state['redirect'] = "tracdelight_product/$tracdelight_product->ein";
+  $form_state['redirect'] = "tracdelight_product/$tracdelight_product->id";
 }
 
 function tracdelight_product_form($form, &$form_state, $tracdelight_product) {
@@ -85,6 +85,13 @@ function tracdelight_product_form($form, &$form_state, $tracdelight_product) {
     '#type' => 'textfield',
     '#title' => t('Delivery time'),
     '#default_value' => isset($tracdelight_product->deliverytime) ? $tracdelight_product->deliverytime : NULL,
+  );
+
+  $form['formattedprice'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Price'),
+    '#default_value' => isset($tracdelight_product->formattedprice) ? $tracdelight_product->formattedprice : NULL,
+    '#required' => TRUE,
   );
 
   $form['shop'] = array(
