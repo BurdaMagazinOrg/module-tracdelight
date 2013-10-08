@@ -34,10 +34,8 @@ function drush_tracdelight_import($query = NULL, $items = 10) {
   }
 
   try {
-
     tracdelight_import_products(array('Query' => $query), $items);
-  }
-  catch(Exception$e) {
+  } catch (Exception $e) {
 
     drush_set_error('error', $e->getMessage());
   }

@@ -1,8 +1,9 @@
 <?php
-class TracdelightProductUIController extends EntityDefaultUIController {}
+class TracdelightProductUIController extends EntityDefaultUIController {
+}
 
 function tracdelight_product_add() {
-  $tracdelight_product = (object)array(
+  $tracdelight_product = (object) array(
     'ein' => '',
     'detailpageurl' => '',
     'type' => 'tracdelight_product',

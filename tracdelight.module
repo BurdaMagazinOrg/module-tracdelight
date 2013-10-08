@@ -132,9 +132,6 @@ function tracdelight_menu() {
   );
 
 
-
-
-
   return $items;
 }
 
@@ -271,16 +268,16 @@ function tracdelight_call_api($params, $items) {
   }
 
   $url = TRACDELIGHT_API_URL . '?' . drupal_http_build_query(
-    array(
-      'AccessKey' => $access_key,
-      'Extracted' => 'false',
-      'Operation' => 'ItemSearch',
-      'Items' => $items,
-      'Output' => 'json',
-      'Fields' => 'modified',
-      'Sort' => '-modified',
-    ) + $params
-  );
+      array(
+        'AccessKey' => $access_key,
+        'Extracted' => 'false',
+        'Operation' => 'ItemSearch',
+        'Items' => $items,
+        'Output' => 'json',
+        'Fields' => 'modified',
+        'Sort' => '-modified',
+      ) + $params
+    );
 
   return drupal_http_request(
     url($url, array('absolute' => TRUE)),
@@ -327,10 +324,30 @@ function tracdelight_get_image($product, $image_path = 'src/normal/') {
 }
 
 /**
+ * Fetch id for an existing tracdelight entity.
+ *
+ * @param string $ein
+ *   Edelight item number
+ * @return mixed $entity_id or NULL
+ *   tracdelight product entity id
+ */
+function tracdelight_get_entity_id($ein) {
+  $query = new EntityFieldQuery();
+  $query->entityCondition('entity_type', 'tracdelight_product')
+    ->propertyCondition('ein', $ein);
+  $result = $query->execute();
+
+  if (isset($result['tracdelight_product'])) {
+    return current(array_keys($result['tracdelight_product']));
+  }
+  return NULL;
+}
+
+/**
  * Retrive product from api and creates or updates the entities.
  *
  * @param $query
- *   @see http://itemsearch.edelight.biz/docs/html/
+ * @see http://itemsearch.edelight.biz/docs/html/
  * @param int $items
  *   Number of items to be fetched
  * @param int $last_run
@@ -362,7 +379,7 @@ function tracdelight_import_products($query, $items = TRACDELIGHT_MAX_ITEMS, $la
       $file = file_save_data($image_data, 'public://' . $item['ein'] . '.jpg', FILE_EXISTS_REPLACE);
       image_path_flush($file->uri);
 
-      $item['shop'] = $item['shop']->name;
+      $item['shop'] = $item['shop']['name'];
       $item['formattedprice'] = $item['listprice']['formattedprice'];
       $item['field_product_image'][LANGUAGE_NONE][0]['fid'] = $file->fid;
       $item['active'] = 1;
@@ -371,16 +388,10 @@ function tracdelight_import_products($query, $items = TRACDELIGHT_MAX_ITEMS, $la
 
       $product = entity_create('tracdelight_product', $item);
 
-      $query = new EntityFieldQuery();
-
-      $query->entityCondition('entity_type', 'tracdelight_product')
-        ->propertyCondition('ein', $product->ein);
-
-      $result = $query->execute();
-      if ($result['tracdelight_product']) {
-
+      $entity_id = tracdelight_get_entity_id($product->ein);
+      if ($entity_id) {
         $product->is_new = FALSE;
-        $product->id = current(array_keys($result['tracdelight_product']));
+        $product->id = $entity_id;
       }
 
       tracdelight_product_save($product);
@@ -443,8 +454,8 @@ function tracdelight_run($item) {
 
   if ($inactive_products) {
     db_update('tracdelight_product')->fields(array(
-        'active' => 0,
-      ))->condition('ein', $inactive_products)->execute();
+      'active' => 0,
+    ))->condition('ein', $inactive_products)->execute();
   }
 }
 

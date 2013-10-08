@@ -59,16 +59,18 @@ class EntityReference_SelectionHandler_Tracdelight extends EntityReference_Selec
           $products = tracdelight_import_products($query);
 
         }
-      } elseif (isset($match)) {
+      }
+      elseif (isset($match)) {
 
         $products = tracdelight_import_products(array('Query' => $match), 10);
 
       }
 
       foreach ($products as $product) {
-
-        $entities['tracdelight_product'][$product['ein']] = $product['title'];
-
+        $entity_id = tracdelight_get_entity_id($product['ein']);
+        if ($entity_id) {
+          $entities['tracdelight_product'][$entity_id] = $product['title'];
+        }
       }
 
     }

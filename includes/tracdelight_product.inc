@@ -91,12 +91,12 @@ function tracdelight_product_page_view($tracdelight_product, $view_mode = 'full'
     '#type' => 'item',
     '#title' => t('Page URL:'),
     '#markup' => theme_link(array(
-        'text' => $tracdelight_product->title,
-        'path' => $tracdelight_product->detailpageurl,
-        'options' => array(
-          'attributes' => array(),
-          'html' => array(),
-        ),
+      'text' => $tracdelight_product->title,
+      'path' => $tracdelight_product->detailpageurl,
+      'options' => array(
+        'attributes' => array(),
+        'html' => array(),
+      ),
     )),
   );
 
@@ -162,8 +162,8 @@ function tracdelight_product_page_view($tracdelight_product, $view_mode = 'full'
 
   // Now to invoke some hooks. We need the language code for
   // hook_entity_view(), so let's get that.
-  global $language ;
-  $langcode = $language->language ;
+  global $language;
+  $langcode = $language->language;
   // And now invoke hook_entity_view().
   module_invoke_all('entity_view', $tracdelight_product, $entity_type, $view_mode,
     $langcode);
