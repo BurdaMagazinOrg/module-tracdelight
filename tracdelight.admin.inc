@@ -150,7 +150,69 @@ function tracdelight_admin($form, &$form_state) {
     '#required' => TRUE,
   );
 
+  $form['tracdelight_import_count'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Import number of items'),
+    '#default_value' => variable_get('tracdelight_import_count', '10'),
+    '#size' => 5,
+    '#maxlength' => 5,
+    '#required' => TRUE,
+  );
 
   return system_settings_form($form);
 }
+
+function tracdelight_admin_import() {
+  $form = array();
+
+  $form['tracdelight_query'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Query string'),
+    '#size' => 32,
+    '#maxlength' => 32,
+  );
+  $form['tracdelight_query_submit'] = array(
+    '#type' => 'submit',
+    '#value' => 'Import',
+  );
+
+  return $form;
+}
+
+function tracdelight_admin_import_validate($form, &$form_state) {
+  $message = '';
+  $query = $form_state['values']['tracdelight_query'];
+  if (!$query) {
+    $message = t('You need to specify a search query.');
+  }
+  else {
+    if (strlen($query) < 2) {
+      $message = t('Please make sure you enter a valid query.');
+    }
+  }
+
+  if ($message) {
+    form_set_error('tracdelight_query', $message);
+  }
+}
+
+function tracdelight_admin_import_submit($form, &$form_state) {
+  $query = $form_state['values']['tracdelight_query'];
+  $items = variable_get('tracdelight_import_count', '10');
+
+  try {
+    tracdelight_import_products(array('Query' => $query), $items);
+
+    drupal_set_message(t("Imported @items for query string '@query'.", array(
+      '@items' => format_plural($items, '1 item', '@count items'),
+      '@query' => $query,
+    )));
+  } catch (Exception $e) {
+    drupal_set_message($e->getMessage(), 'error');
+  }
+}
+
+
+
+
 

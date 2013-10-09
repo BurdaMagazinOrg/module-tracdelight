@@ -131,6 +131,21 @@ function tracdelight_menu() {
     'file' => 'tracdelight.admin.inc',
   );
 
+  $items['admin/config/services/tracdelight/config'] = array(
+    'title' => 'tracdelight',
+    'type' => MENU_DEFAULT_LOCAL_TASK,
+    'weight' => -10,
+  );
+
+  $items['admin/config/services/tracdelight/import'] = array(
+    'title' => 'Import',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('tracdelight_admin_import'),
+    'access arguments' => array('administer tracdelight_product entities'),
+    'type' => MENU_LOCAL_TASK,
+    'file' => 'tracdelight.admin.inc',
+  );
+
 
   return $items;
 }
