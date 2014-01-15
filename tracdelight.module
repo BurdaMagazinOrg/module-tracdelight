@@ -381,6 +381,10 @@ function tracdelight_import_products($query, $items = TRACDELIGHT_MAX_ITEMS, $la
 
     $response = json_decode($response->data, 1);
 
+    if (!is_array($response['itemsearchresponse']['items']['item'])) {
+      return $active_products;
+    }
+
     foreach ($response['itemsearchresponse']['items']['item'] as $item) {
 
       $active_products[$item['ein']] = $item;
