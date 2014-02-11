@@ -372,52 +372,51 @@ function tracdelight_get_entity_id($ein) {
  * @throws Exception
  */
 function tracdelight_import_products($query, $items = TRACDELIGHT_MAX_ITEMS, $last_run = 0) {
-
   $active_products = array();
 
   $response = tracdelight_call_api($query, $items);
 
-  if ($response->code == 200) {
-
-    $response = json_decode($response->data, 1);
-
-    if (!isset($response['itemsearchresponse']['items']['item']) || !is_array($response['itemsearchresponse']['items']['item'])) {
-      return $active_products;
-    }
-
-    foreach ($response['itemsearchresponse']['items']['item'] as $item) {
-
-      $active_products[$item['ein']] = $item;
-
-      if ($last_run >= $item['modified']) {
-        continue;
-      }
-
-      $image_data = tracdelight_get_image($item);
-
-      $file = file_save_data($image_data, 'public://' . $item['ein'] . '.jpg', FILE_EXISTS_REPLACE);
-      image_path_flush($file->uri);
-
-      $item['shop'] = $item['shop']['name'];
-      $item['formattedprice'] = $item['listprice']['formattedprice'];
-      $item['field_product_image'][LANGUAGE_NONE][0]['fid'] = $file->fid;
-      $item['active'] = 1;
-
-      module_load_include('inc', 'tracdelight', 'includes/tracdelight_product');
-
-      $product = entity_create('tracdelight_product', $item);
-
-      $entity_id = tracdelight_get_entity_id($product->ein);
-      if ($entity_id) {
-        $product->is_new = FALSE;
-        $product->id = $entity_id;
-      }
-
-      tracdelight_product_save($product);
-    }
-  }
-  else {
+  if ($response->code != 200) {
     throw new Exception("Could not reach tracdelight API");
+  }
+
+  $response = drupal_json_decode($response->data);
+
+  if (!is_array($response['itemsearchresponse']['items']['item'])) {
+    return $active_products;
+  }
+
+  foreach ($response['itemsearchresponse']['items']['item'] as $item) {
+    $active_products[$item['ein']] = $item;
+
+    if ($last_run >= $item['modified']) {
+      continue;
+    }
+
+    $image_data = tracdelight_get_image($item);
+
+    $file = file_save_data($image_data, 'public://' . $item['ein'] . '.jpg', FILE_EXISTS_REPLACE);
+    image_path_flush($file->uri);
+
+    $item['shop']                                         = $item['shop']['name'];
+    $item['formattedprice']                               = $item['listprice']['formattedprice'];
+    $item['price']                                        = $item['listprice']['amount'];
+    $item['oldprice']                                     = $item['listprice']['priceold'];
+    $item['currency']                                     = $item['listprice']['currencycode'];
+    $item['active']                                       = 1;
+    $item['field_product_image'][LANGUAGE_NONE][0]['fid'] = $file->fid;
+
+    module_load_include('inc', 'tracdelight', 'includes/tracdelight_product');
+
+    $product = entity_create('tracdelight_product', $item);
+
+    $entity_id = tracdelight_get_entity_id($product->ein);
+    if ($entity_id) {
+      $product->is_new = FALSE;
+      $product->id = $entity_id;
+    }
+
+    tracdelight_product_save($product);
   }
 
   return $active_products;
@@ -443,28 +442,38 @@ function tracdelight_cron() {
 
   $queue = DrupalQueue::get('tracdelight');
 
+  // only put stuff into queue if the queue is empty.
+  // API is slower then our cron run and so we would query all the same item all the time.
+  if ($queue->numberOfItems() > 0) {
+    return;
+  }
+
   $page = 0;
 
   $query = new EntityFieldQuery();
   $query->entityCondition('entity_type', 'tracdelight_product');
 
   while (TRUE) {
+    $query->range($page++ * TRACDELIGHT_MAX_ITEMS, TRACDELIGHT_MAX_ITEMS);
     $result = $query->execute();
     if (!isset($result['tracdelight_product']) || count($result['tracdelight_product']) <= 0) {
       break;
     }
-    $queue->createItem($result);
-    $query->range(++$page * TRACDELIGHT_MAX_ITEMS, TRACDELIGHT_MAX_ITEMS);
+
+    $products = entity_load('tracdelight_product', array_keys($result['tracdelight_product']));
+
+    $eins = array_map(function($product) {
+      return $product->ein;
+    }, $products);
+
+    $queue->createItem($eins);
   }
 }
 
 /**
  * Worker Callback for the tracdelight cron queue.
  */
-function tracdelight_run($item) {
-
-
-  $eins = array_keys($item['tracdelight_product']);
+function tracdelight_run($eins) {
 
   $active_products = tracdelight_import_products(array('EIN' => implode(',', $eins)), TRACDELIGHT_MAX_ITEMS);
   $active_products_eins = array_keys($active_products);
@@ -477,4 +486,3 @@ function tracdelight_run($item) {
     ))->condition('ein', $inactive_products)->execute();
   }
 }
-

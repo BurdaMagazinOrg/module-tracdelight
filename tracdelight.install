@@ -89,6 +89,29 @@ function tracdelight_schema() {
         'type' => 'text',
         'not null' => TRUE,
       ),
+      'price' => array(
+        'description' => 'Price of the product',
+        'type'        => 'numeric',
+        'precision'   => 8,
+        'scale'       => 2,
+        'not null'    => TRUE,
+        'default'     => '0',
+      ),
+      'oldprice' => array(
+        'description' => 'old Price of the product, used if you want to display that a product got cheaper',
+        'type'        => 'numeric',
+        'precision'   => 8,
+        'scale'       => 2,
+        'not null' => TRUE,
+        'default' => '0',
+      ),
+      'currency' => array(
+        'description' => 'Currency',
+        'type' => 'char',
+        'length' => 3,
+        'not null' => TRUE,
+        'default' => 'EUR',
+      ),
     ),
     'primary key' => array('id'),
     'unique keys' => array(
@@ -99,6 +122,17 @@ function tracdelight_schema() {
   return $schema;
 }
 
+/**
+ * add more granular money fields
+ */
+function tracdelight_update_7001()
+{
+  $schema = tracdelight_schema();
+
+  db_add_field('tracdelight_product', 'price',    $schema['tracdelight_product']['fields']['price']);
+  db_add_field('tracdelight_product', 'oldprice', $schema['tracdelight_product']['fields']['oldprice']);
+  db_add_field('tracdelight_product', 'currency', $schema['tracdelight_product']['fields']['currency']);
+}
 
 /**
  * Implements hook_install().
