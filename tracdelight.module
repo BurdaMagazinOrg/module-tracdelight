@@ -293,9 +293,10 @@ function tracdelight_call_api($params, $items) {
         'Sort' => '-modified',
       ) + $params
     );
+  $url = url($url, array('absolute' => TRUE));
 
   return drupal_http_request(
-    url($url, array('absolute' => TRUE)),
+    $url,
     array(
       'Content-Type' => 'text/xml',
     ),
@@ -485,4 +486,9 @@ function tracdelight_run($eins) {
       'active' => 0,
     ))->condition('ein', $inactive_products)->execute();
   }
+}
+
+function tracedelight_string_seems_to_be_ein($string)
+{
+  return preg_match('/^[a-z0-9]{16}$/i', $string);
 }
