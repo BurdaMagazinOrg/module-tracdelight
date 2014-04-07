@@ -146,9 +146,18 @@ function tracdelight_menu() {
     'file' => 'tracdelight.admin.inc',
   );
 
+  $items['admin/config/services/tracdelight/api'] = array(
+    'title' => 'API Test',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('tracdelight_api_form'),
+    'access arguments' => array('administer tracdelight_product entities'),
+    'type' => MENU_LOCAL_TASK,
+    'file' => 'tracdelight.admin.inc',
+  );
 
   return $items;
 }
+
 
 /**
  * Implements hook_permission().
@@ -270,7 +279,7 @@ function tracdelight_ctools_plugin_directory($module, $plugin) {
  * @return object
  *   Drupal response object
  */
-function tracdelight_call_api($params, $items) {
+function tracdelight_call_api($params, $items, &$messages = array()) {
 
   if (isset($params['Query'])) {
     $params['Query'] = '"' . $params['Query'] . '"';
@@ -294,6 +303,8 @@ function tracdelight_call_api($params, $items) {
       ) + $params
     );
   $url = url($url, array('absolute' => TRUE));
+
+  $messages['url'] = $url;
 
   return drupal_http_request(
     $url,
@@ -491,4 +502,18 @@ function tracdelight_run($eins) {
 function tracedelight_string_seems_to_be_ein($string)
 {
   return preg_match('/^[a-z0-9]{16}$/i', $string);
+}
+
+function tracdelight_get_ein_from_uri($uri)
+{
+  parse_str($uri, $query_params);
+
+  if (is_array($query_params) && isset($query_params['ein'])) {
+    return $query_params['ein'];
+  } else if (preg_match('/\,(?P<ein>[a-z0-9]{16})\,/i', $uri, $matches)) {
+    return $matches['ein'];
+  }
+
+  return false;
+
 }

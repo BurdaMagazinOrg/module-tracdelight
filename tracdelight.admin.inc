@@ -212,7 +212,77 @@ function tracdelight_admin_import_submit($form, &$form_state) {
   }
 }
 
+function tracdelight_api_form($form, &$form_state) {
 
+
+  $form['query_string'] = array(
+    '#type' => 'textfield',
+    '#required' => TRUE,
+    '#title' => t('Query'),
+  );
+
+  $form['tracdelight_query_submit'] = array(
+    '#type' => 'submit',
+    '#value' => 'Import',
+  );
+
+
+  return $form;
+}
+
+
+function tracdelight_api_form_submit($form, &$form_state) {
+  $query = $form_state['values']['query_string'];
+
+  $api_query = array();
+
+  if (tracedelight_string_seems_to_be_ein($query)) {
+    drupal_set_message(t('Query seems to be "<strong>@ein</strong>"' , array(
+      '@ein' => $query,
+    )));
+
+    $api_query['EIN'] = $query;
+  } else if ($ein = tracdelight_get_ein_from_uri($query)) {
+    drupal_set_message(t('Found ein "<strong>@ein</strong>" in "<strong>@uri</strong>"' , array(
+        '@ein' => $ein,
+        '@uri' => $query,
+    )));
+
+    $api_query['EIN'] = $ein;
+  } else {
+    drupal_set_message(t('we just issue query "<strong>@query</strong>"' , array(
+      '@query' => $query,
+    )));
+
+    $api_query['Query'] = $query;
+  }
+
+  drupal_set_message(t('api_query is <strong>@query</strong>' , array(
+    '@query' => print_r($api_query, 1),
+  )));
+
+  $messages = array();
+  $response = tracdelight_call_api($api_query, 20, $messages);
+
+  foreach ($messages as $key => $message) {
+    drupal_set_message(t('api <strong>@type</strong> is <strong>@message</strong>' , array(
+      '@type' => $key,
+      '@message' => $message,
+    )));
+  }
+  drupal_set_message('response code <strong>' . $response->code . '</strong>');
+  drupal_set_message('response is <xmp>' . print_r(drupal_json_decode($response->data), 1) . '</xmp>');
+
+//  try {
+//
+//    drupal_set_message(t("Imported @items for query string '@query'.", array(
+//          '@items' => format_plural($items, '1 item', '@count items'),
+//          '@query' => $query,
+//        )));
+//  } catch (Exception $e) {
+//    drupal_set_message($e->getMessage(), 'error');
+//  }
+}
 
 
 
