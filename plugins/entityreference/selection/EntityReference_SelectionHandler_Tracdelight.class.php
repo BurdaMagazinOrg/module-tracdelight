@@ -25,11 +25,11 @@ class EntityReference_SelectionHandler_Tracdelight extends EntityReference_Selec
 
     if (isset($match)) {
 
-      if ($ein = $this->_getEinFromUri()) {
+      if ($ein = tracdelight_get_ein_from_uri(request_path())) {
         $query->propertyCondition('ein', $ein, $match_operator);
       } else if (tracedelight_string_seems_to_be_ein($match)) {
         $query->propertyCondition('ein', $match, $match_operator);
-      } else {
+      } else if (strpos($match, 'http:') !== 0){
         $query->propertyCondition('title', $match, $match_operator);
       }
     }
@@ -50,7 +50,7 @@ class EntityReference_SelectionHandler_Tracdelight extends EntityReference_Selec
       $entities['tracdelight_product'] = array();
 
       $products = array();
-      if ($ein = $this->_getEinFromUri()) {
+      if ($ein = tracdelight_get_ein_from_uri(request_path())) {
         $query = array('EIN' => $ein);
         $products = tracdelight_import_products($query);
       }
@@ -68,18 +68,5 @@ class EntityReference_SelectionHandler_Tracdelight extends EntityReference_Selec
     }
 
     return $entities;
-  }
-
-  protected function _getEinFromUri()
-  {
-    // td.oo link
-    // weird drupal stuff.
-    // 1              /2           /3     /5                      /6   /7               /8    /9      //10,11
-    // entityreference/autocomplete/single/field_edelight_products/node/edelight_gallery/75261/http%3A//td.oo34.net/cl/aaid%3DVlpQAYKIMyDSTtHO%26ein%3D21x9s0irmygjktn3%26paid%3DlYVRbN7BUaBWfHq
-    // entityreference/autocomplete/single/field_edelight_products/node/edelight_gallery/75261/http%3A//editorialshopping.tracdelight.com/Bunte/muuto-elevated-vase-grau%2Cqncf1el0uy9mhaop%2Ci
-    if ($query_string = arg(11)) {
-      return tracdelight_get_ein_from_uri($query_string);
-    }
-    return false;
   }
 }
