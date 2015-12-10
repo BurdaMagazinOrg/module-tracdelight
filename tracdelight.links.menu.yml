@@ -1,0 +1,7 @@
+# Product menu items definition
+product.admin.structure.settings:
+  title: Product settings
+  description: 'Configure Product entities'
+  route_name: product.settings
+  parent: system.admin_structure
+
