@@ -1,0 +1,22 @@
+<?php
+
+/**
+ * @file
+ * Contains tracdelight.install.
+ */
+
+
+function tracdelight_update_8001() {
+
+  $spec = array(
+    'type' => 'int',
+    'size' => 'tiny',
+    'description' => 'Target file id',
+    'not null' => FALSE,
+    'default' => NULL,
+    'unsigned' => TRUE,
+  );
+  $schema = \Drupal\Core\Database\Database::getConnection()->schema();
+  $schema->addField('product', 'file', $spec);
+
+}

@@ -50,10 +50,10 @@ product.settings:
 
 
 tracdelight.tracdelight_admin_form:
-  path: '/admin/config/tracdelight/tracdelightadmin'
+  path: '/admin/config/services/tracdelight'
   defaults:
     _form: '\Drupal\tracdelight\Form\TracdelightAdminForm'
-    _title: 'TracdelightAdminForm'
+    _title: 'Tracdelight'
   requirements:
     _permission: 'access administration pages'
 

@@ -433,6 +433,34 @@ class Product extends ContentEntityBase implements ProductInterface {
       ->setDisplayConfigurable('form', TRUE)
       ->setDisplayConfigurable('view', TRUE);
 
+
+    $fields['file'] = BaseFieldDefinition::create('entity_reference')
+      ->setLabel(t('Image'))
+      ->setDescription(t('The file ID of image of the Product entity.'))
+      ->setRevisionable(TRUE)
+      ->setSetting('target_type', 'file')
+      ->setSetting('handler', 'default')
+      ->setSetting('handler_settings', ['target_bundles' => ['image' => 'image']])
+      ->setTranslatable(TRUE)
+      ->setDisplayOptions('view', array(
+        'label' => 'hidden',
+        'type' => 'author',
+        'weight' => 0,
+      ))
+      ->setDisplayOptions('form', array(
+        'type' => 'entity_reference_autocomplete',
+        'weight' => 5,
+        'settings' => array(
+          'match_operator' => 'CONTAINS',
+          'size' => '60',
+          'autocomplete_type' => 'tags',
+          'placeholder' => '',
+        ),
+      ))
+      ->setDisplayConfigurable('form', TRUE)
+      ->setDisplayConfigurable('view', TRUE);
+
+
     $fields['langcode'] = BaseFieldDefinition::create('language')
       ->setLabel(t('Language code'))
       ->setDescription(t('The language code for the Product entity.'));

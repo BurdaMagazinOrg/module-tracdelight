@@ -173,13 +173,12 @@ class Tracdelight implements TracdelightInterface {
         continue;
       }
 
-      #$image_data = $this->retrieveImage($item);
+      $image_data = $this->retrieveImage($item);
+      $file = file_save_data($image_data, 'public://' . $item['ein'] . '.jpg', FILE_EXISTS_REPLACE);
+      image_path_flush($file->getFileUri());
 
-      #$file = file_save_data($image_data, 'public://' . $item['ein'] . '.jpg', FILE_EXISTS_REPLACE);
-      #image_path_flush($file->uri);
 
-
-      #$item['field_product_image'][LANGUAGE_NONE][0]['fid'] = $file->fid;
+      $item['file']['target_id'] = $file->id();
 
       $entity_id = $this->getEntityIdByEin($item['ein']);
 
@@ -194,8 +193,6 @@ class Tracdelight implements TracdelightInterface {
             $product->$key = $value[LanguageInterface::LANGCODE_DEFAULT];
           }
         }
-
-
       }
       else {
 
