@@ -15,8 +15,16 @@
  * @ingroup themeable
  */
 #}
-<div{{ attributes.addClass('product') }}>
-  {% if content %}
-    {{- content -}}
-  {% endif %}
-</div>
+{% if content.active %}
+    <div class="item-product" data-external-url="{{ content.uri }}">
+        <div class="img-container">
+            {{ content.file }}
+        </div>
+        <div class="caption">
+            <div class="text-brand">{{ content.brand }}</div>
+            <div class="text-headline"><a href="#">{{ content.title }}</a></div>
+            <div class="text-price">{{ content.formattedprice }}</div>
+            <div class="text-shop">Zum Shop</div>
+        </div>
+    </div>
+{% endif %}

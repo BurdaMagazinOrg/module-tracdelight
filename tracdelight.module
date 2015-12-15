@@ -28,9 +28,26 @@ function tracdelight_help($route_name, RouteMatchInterface $route_match) {
  * Implements hook_theme().
  */
 function tracdelight_theme() {
-  $theme = [];
+  return array(
+    'product' => array(
+      'render element' => 'elements',
+    ),
 
-  return $theme;
+  );
+}
+
+function template_preprocess_product(array &$variables) {
+  // Fetch Product Entity Object.
+  $product = $variables['elements']['#product'];
+
+  // Helpful $content variable for templates.
+  foreach (\Drupal\Core\Render\Element::children($variables['elements']) as $key) {
+    $variables['content'][$key] = $variables['elements'][$key];
+  }
+
+  $variables['content']['uri'] = $product->detailpageurl->uri;
+  $variables['content']['active'] = $product->active->value;
+
 }
 
 
@@ -38,7 +55,6 @@ function tracdelight_theme() {
  * Implementation of hook_cron().
  */
 function tracdelight_cron() {
-
 
   $queue = \Drupal::queue('tracdelight_product_updates');
 

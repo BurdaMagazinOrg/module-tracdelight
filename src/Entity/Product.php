@@ -433,28 +433,16 @@ class Product extends ContentEntityBase implements ProductInterface {
       ->setDisplayConfigurable('form', TRUE)
       ->setDisplayConfigurable('view', TRUE);
 
-
-    $fields['file'] = BaseFieldDefinition::create('entity_reference')
+    $fields['file'] = BaseFieldDefinition::create('image')
       ->setLabel(t('Image'))
-      ->setDescription(t('The file ID of image of the Product entity.'))
+      ->setDescription(t('The image of the media.'))
       ->setRevisionable(TRUE)
-      ->setSetting('target_type', 'file')
-      ->setSetting('handler', 'default')
-      ->setSetting('handler_settings', ['target_bundles' => ['image' => 'image']])
-      ->setTranslatable(TRUE)
       ->setDisplayOptions('view', array(
+        'type' => 'image',
+        'weight' => 1,
         'label' => 'hidden',
-        'type' => 'author',
-        'weight' => 0,
-      ))
-      ->setDisplayOptions('form', array(
-        'type' => 'entity_reference_autocomplete',
-        'weight' => 5,
         'settings' => array(
-          'match_operator' => 'CONTAINS',
-          'size' => '60',
-          'autocomplete_type' => 'tags',
-          'placeholder' => '',
+          'image_style' => 'thumbnail',
         ),
       ))
       ->setDisplayConfigurable('form', TRUE)

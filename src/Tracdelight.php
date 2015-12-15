@@ -177,9 +177,6 @@ class Tracdelight implements TracdelightInterface {
       $file = file_save_data($image_data, 'public://' . $item['ein'] . '.jpg', FILE_EXISTS_REPLACE);
       image_path_flush($file->getFileUri());
 
-
-      $item['file']['target_id'] = $file->id();
-
       $entity_id = $this->getEntityIdByEin($item['ein']);
 
       if ($entity_id) {
@@ -188,21 +185,24 @@ class Tracdelight implements TracdelightInterface {
           ->getStorage('product')
           ->load($entity_id);
 
+        $product->file->target_id = $file->id();
+        $product->file->alt = $item['title'];
+
         foreach ($item as $key => $value) {
-          if (property_exists($product, $key) && isset($value[LanguageInterface::LANGCODE_DEFAULT])) {
-            $product->$key = $value[LanguageInterface::LANGCODE_DEFAULT];
+          if (isset($product->{$key})) {
+            $product->{$key}->value = $value;
           }
         }
       }
       else {
+        $item['file']['target_id'] = $file->id();
+        $item['file']['title'] = $item['title'];
 
         $product = $this->entityManager
           ->getStorage('product')
           ->create($item);
-        $product->save();
-
-
       }
+      $product->save();
       $active_products[$item['ein']] = $product;
     }
     return $active_products;
@@ -250,7 +250,8 @@ class Tracdelight implements TracdelightInterface {
 
       $image = $this->httpClient->request(
         'GET',
-        Url::fromUri($product['imagebaseurl'] . $image_path . $product['ein'] . '.jpg', array('absolute' => TRUE))->toUriString(),
+        Url::fromUri($product['imagebaseurl'] . $image_path . $product['ein'] . '.jpg', array('absolute' => TRUE))
+          ->toUriString(),
         array(
           'Content-Type' => 'image/jpeg',
         )
