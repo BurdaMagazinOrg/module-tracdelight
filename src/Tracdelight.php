@@ -173,8 +173,14 @@ class Tracdelight implements TracdelightInterface {
         continue;
       }
 
-      $image_data = $this->retrieveImage($item);
-      $file = file_save_data($image_data, 'public://' . $item['ein'] . '.jpg', FILE_EXISTS_REPLACE);
+      $image = $this->retrieveImage($item);
+      if ($image->getHeader('content-type')[0] == 'image/jpeg') {
+        $suffix = '.jpg';
+      }
+      elseif ($image->getHeader('content-type')[0] == 'image/png')  {
+        $suffix = '.png';
+      }
+      $file = file_save_data($image->getBody(), 'public://' . $item['ein'] . $suffix, FILE_EXISTS_REPLACE);
       image_path_flush($file->getFileUri());
 
       $entity_id = $this->getEntityIdByEin($item['ein']);
@@ -237,8 +243,8 @@ class Tracdelight implements TracdelightInterface {
    *   A product array fetched from the api
    * @param string $image_path
    *   Path of the image which should be fetched. API Docs
-   * @return mixed
-   *   Data stream of the image
+   * @return \Psr\Http\Message\ResponseInterface
+   *   Response from api
    * @throws \Exception
    */
   public function retrieveImage($product, $image_path = 'src/normal/') {
@@ -266,6 +272,11 @@ class Tracdelight implements TracdelightInterface {
       throw new \Exception($error_msg, $product['ein'], 'original');
     }
 
-    return $image->getBody();
+    if (!in_array($image->getHeader('content-type')[0], array('image/png', 'image/jpeg'))) {
+      $error_msg = 'Error Message: Unexpected content type "' . $image->getHeader('content-type') . '"';
+      throw new \Exception($error_msg, $product['ein'], 'original');
+    }
+
+    return $image;
   }
 }
